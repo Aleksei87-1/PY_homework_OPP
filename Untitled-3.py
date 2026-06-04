@@ -15,6 +15,12 @@ class Student:
                 lecturer.grades[course] = [grade]
         else:
             return 'Ошибка'
+    @property
+    def avg_grade(self):
+        all_grades = []
+        for grades_list in self.grades.values():
+            all_grades.extend(grades_list)
+        return round(sum(all_grades) / len(all_grades), 1) if all_grades else 0
 
     def __str__(self):
         avg_grade = self.get_avg_grade()
@@ -27,13 +33,6 @@ class Student:
                f'Завершенные курсы: {finished_courses_str}')
         return res
 
-    def get_avg_grade(self):
-        all_grades = []
-        for grades_list in self.grades.values():
-            all_grades.extend(grades_list)
-        if len(all_grades) == 0:
-            return 0
-        return round(sum(all_grades) / len(all_grades), 1)
 
     def __lt__(self, other):
         if not isinstance(other, Student):
@@ -48,6 +47,40 @@ class Mentor:
         self.surname = surname
         self.courses_attached = []
 
+
+class Lecturer(Mentor):
+    def __init__(self, name, surname):
+        super().__init__(name, surname)
+        self.grades = {}  
+        
+    @property
+    def avg_grade(self):
+        all_grades = []
+        for grades_list in self.grades.values():
+            all_grades.extend(grades_list)
+        if len(all_grades) == 0:
+            return 0
+        return round(sum(all_grades) / len(all_grades), 1)
+
+    def __str__(self):
+        avg_grade = self.avg_grade
+        res = (f'Имя: {self.name}\n'
+               f'Фамилия: {self.surname}\n'
+               f'Средняя оценка за лекции: {self.avg_grade}')
+        return res
+
+    def __lt__(self, other):
+        if not isinstance(other, Lecturer):
+            print('Не лектор!')
+            return
+        return self.avg_grade < other.avg_grade
+
+
+class Reviewer(Mentor):
+    def __str__(self):
+        res = f'Имя: {self.name}\nФамилия: {self.surname}'
+        return res
+
     def rate_hw(self, student, course, grade):
         if isinstance(student, Student) and course in self.courses_attached and course in student.courses_in_progress:
             if course in student.grades:
@@ -57,41 +90,6 @@ class Mentor:
         else:
             return 'Ошибка'
 
-
-class Lecturer(Mentor):
-    def __init__(self, name, surname):
-        super().__init__(name, surname)
-        self.grades = {}  # Словарь для оценок от студентов
-
-    def __str__(self):
-        avg_grade = self.get_avg_grade()
-        res = (f'Имя: {self.name}\n'
-               f'Фамилия: {self.surname}\n'
-               f'Средняя оценка за лекции: {avg_grade}')
-        return res
-
-    def get_avg_grade(self):
-        all_grades = []
-        for grades_list in self.grades.values():
-            all_grades.extend(grades_list)
-        if len(all_grades) == 0:
-            return 0
-        return round(sum(all_grades) / len(all_grades), 1)
-
-    def __lt__(self, other):
-        if not isinstance(other, Lecturer):
-            print('Не лектор!')
-            return
-        return self.get_avg_grade() < other.get_avg_grade()
-
-
-class Reviewer(Mentor):
-    def __str__(self):
-        res = f'Имя: {self.name}\nФамилия: {self.surname}'
-        return res
-
-
-
 student_1 = Student('Алехина', 'Ольга', 'Ж')
 student_1.courses_in_progress += ['Python']
 student_1.finished_courses += ['Git']
@@ -100,16 +98,16 @@ student_2 = Student('Алексей', 'Алексеев', 'М')
 student_2.courses_in_progress += ['Python', 'Java']
 student_2.finished_courses += ['C++']
 
-lecturer_1 = Lecturer('Иван', 'Иванов', 'М')
+lecturer_1 = Lecturer('Иван', 'Иванов')
 lecturer_1.courses_attached += ['Python']
 
-lecturer_2 = Lecturer('Анна', 'Аннова', 'Ж')
+lecturer_2 = Lecturer('Анна', 'Аннова')
 lecturer_2.courses_attached += ['Python', 'Java']
 
-reviewer_1 = Reviewer('Пётр', 'Петров', 'М')
+reviewer_1 = Reviewer('Пётр', 'Петров')
 reviewer_1.courses_attached += ['Python']
 
-reviewer_2 = Reviewer('Василий', 'Васильев', 'М')
+reviewer_2 = Reviewer('Василий', 'Васильев')
 reviewer_2.courses_attached += ['Python', 'Java']
 
 reviewer_1.rate_hw(student_1, 'Python', 10)
@@ -162,6 +160,15 @@ print(f"{lecturer_1.name} лучше {lecturer_2.name}? {lecturer_1 > lecturer_2
 print("\nСредние оценки по курсам:")
 students_list = [student_1, student_2]
 lecturers_list = [lecturer_1, lecturer_2]
+
+print("\n--- Демонстрация ошибок ---")
+print("Попытка лектора оценить ДЗ (ожидается 'Ошибка'):")
+result = lecturer_1.rate_hw(student_1, 'Python', 5)
+print(result)  
+
+print("\nПопытка студента оценить лектора, который не ведет его курс:")
+result = student_1.rate_lecture(lecturer_2, 'Java', 8)
+print(result)  
 
 print(f"Средняя оценка всех студентов по курсу Python: {avg_student_grade(students_list, 'Python')}")
 print(f"Средняя оценка всех лекторов по курсу Python: {avg_lecturer_grade(lecturers_list, 'Python')}")
